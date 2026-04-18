@@ -1,0 +1,152 @@
+<!-- PLEASE SEE README.md FOR REFERENCES -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bar Chart</title>
+    <!-- <link rel="stylesheet" href="css/style.css"> -->
+    <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js" integrity="sha512-wNH6xsp2n8CfB91nrBtfc4sfLwYPBMjSWVUwQOp60AYYXH6i8yCwuKFZ4rgK2i6pQek/b+bSyR7b01/922IBzQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+</head>
+
+<body>
+    <a href="../index.html">Back</a>
+    <div id="my_dataviz"></div>
+    <script type="text/javascript">
+        // Your beautiful D3 code will go here
+        var dataset;  //Declare global variable, initially empty (undefined)
+
+        var margin = { top: 70, right: 30, bottom: 90, left: 70 },
+            width = 760 - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
+
+        // append the svg object to the body of the page
+        var svg = d3.select("#my_dataviz")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        d3.csv("../data/movieratings.csv").then(function (data) {
+            var filtered = data.filter(function (d) {
+                return d["studio_name"] == "Disney"; // Use + to convert string to number
+            });
+
+            dataset = d3.rollups(filtered,                                                                                                    
+                v => d3.mean(v, d => +d["tomatometer_rating"]),                                                                      
+                d => d["rating"]                                                                                                        
+            ).map(([key, value]) => ({                                                                                                        
+                "rating": key,                                                                                                          
+                "tomatometer_rating": value                                                                                         
+            })); 
+            drawChart();
+        });
+
+    
+        // Add Y axis
+        function drawChart() {
+            var x = d3.scaleBand()
+                .range([0, width])
+                .domain(dataset.map(function(d) { return d["rating"]; }))
+                .padding(0.5);
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x))
+                .selectAll("text")
+                .attr("transform", "translate(-10,0)rotate(-45)")
+                .style("text-anchor", "end");
+
+            var yMax = d3.max(dataset, function (d) { return +d["tomatometer_rating"] })
+            var y = d3.scaleLinear()
+                .domain([0, 100])
+                .range([height, 0]);
+            svg.append("g")
+                .call(d3.axisLeft(y));
+        
+            var cancelledMax = d3.max(dataset, function (d) { return +d["Statistics.Flights.Cancelled"] })
+            var cancelledMin = d3.min(dataset, function (d) { return +d["Statistics.Flights.Cancelled"] })
+            var colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+            .domain(["PG", "PG-13", "R", "G"]);
+            
+            
+            
+            const tooltip = d3.select("body")                                                                                                     
+            .append("div")                                                                                                                    
+            .attr("class", "tooltip")                                                                                                         
+            .style("position", "absolute")                                                                                                    
+            .style("background", "white")                                                                                                     
+            .style("padding", "5px")                                                                                                          
+            .style("border", "1px solid #ccc")                                                                                                
+            .style("pointer-events", "none")                                                                                                  
+            .style("opacity", 0); 
+            // Bars
+            svg.selectAll("mybar")
+                .data(dataset)
+                .enter()
+                .append("rect")
+                .attr("x", function (d) { return x(d["rating"]); })
+                .attr("y", function (d) { return y(d["tomatometer_rating"]); })
+                .attr("width", x.bandwidth())
+                .attr("height", function (d) { return height - y(d["tomatometer_rating"]); })
+                .attr("fill", function (d) { return colorScale(d["rating"]); })
+                .on("mouseover", (evt, d) => {
+                    d3.select(evt.currentTarget).style("opacity", 1);  // show circle                                           
+                    tooltip                                                                                                     
+                        .style("opacity", 1)                                                                                    
+                        .html(`Average Tomatometer Rating: ${d["tomatometer_rating"]}`)                                                       
+                        .style("left", (evt.pageX + 10) + "px")                                                                 
+                        .style("top", (evt.pageY - 10) + "px"); 
+                })
+                .on("mouseout", (evt) => {                                                                                      
+                tooltip.style("opacity", 0); 
+                });   
+
+            
+
+
+            svg.append("g")
+            .attr("class", "legend")
+            .attr("transform", `translate(${width - margin.right - 50},-40)`);
+
+            
+
+            var colorLegend = d3.legendColor()
+                .title("color legend")
+                .titleWidth(100)
+                .cells(5)
+                .scale(colorScale);
+
+
+            svg.select(".legend")
+            .call(colorLegend);
+
+            svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(" + (width/2) + " ," + (margin.top - 60) + ")")
+            .text("Average Tomatometer Rating by Movie Rating");
+
+            svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top) + ")")
+            .text("Disney");
+
+            svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -margin.left)
+            .attr("x", -height / 2)
+            .text("Average Tomatometer Rating");
+
+
+        }
+
+
+    </script>
+</body>
+
+</html>
