@@ -1,0 +1,216 @@
+<!-- PLEASE SEE README.md FOR REFERENCES -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>SCatterplot Chart</title>
+    <!-- <link rel="stylesheet" href="css/style.css"> -->
+    <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
+
+</head>
+
+<body>
+    <a href="../index.html">Back</a>
+    <div></div>
+    <div id="my_dataviz"></div>
+    <script type="text/javascript">
+        // Your beautiful D3 code will go here
+        var dataset;  //Declare global variable, initially empty (undefined)
+
+        var margin = { top: 50, right: 30, bottom: 70, left: 60 },
+            width = 760 - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
+
+        // append the svg object to the body of the page
+        var svg = d3.select("#my_dataviz")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        d3.csv("../data/mini_movieratings.csv").then(function (data) {
+            const allGenres = [...new Set(                                                                                                        
+                data.flatMap(d => d.genre.split(", "))                                                                                              
+            )].sort();   
+
+            const genreDropdown = d3.select("body")
+            .append("select")
+            .attr("id", "genre-filter");
+
+            genreDropdown.append("option")
+            .attr("value", "All")
+            .text("All Genres");
+
+            genreDropdown.selectAll("option.genre")                                                                                                    
+            .data(allGenres)                                                                                                                    
+            .enter()                                                                                                                            
+            .append("option")                                                                                                                   
+            .attr("value", d => d)                                                                                                              
+            .text(d => d);
+
+            genreDropdown.on("change", applyFilters);
+            
+
+            const allStudios = [...new Set(                                                                                                        
+                data.flatMap(d => d["studio_name"].split(", "))                                                                                              
+            )].sort(); 
+
+            const studioDropdown = d3.select("body")
+            .append("select")
+            .attr("id", "studio-filter");
+
+            studioDropdown.append("option")
+            .attr("value", "All")
+            .text("All Studios");
+
+            studioDropdown.selectAll("option.studio")                                                                                                    
+            .data(allStudios)                                                                                                                    
+            .enter()                                                                                                                            
+            .append("option")                                                                                                                   
+            .attr("value", d => d)                                                                                                              
+            .text(d => d);
+
+            studioDropdown.on("change", applyFilters);  
+            
+            const allRatings = [...new Set(                                                                                                        
+                data.flatMap(d => d.rating.split(", "))                                                                                              
+            )].sort(); 
+            
+            const ratingDropdown = d3.select("body")
+            .append("select")
+            .attr("id", "rating-filter");
+
+            ratingDropdown.append("option")
+            .attr("value", "All")
+            .text("All Ratings");
+
+            ratingDropdown.selectAll("option.studio")                                                                                                    
+            .data(allRatings)                                                                                                                    
+            .enter()                                                                                                                            
+            .append("option")                                                                                                                   
+            .attr("value", d => d)                                                                                                              
+            .text(d => d);
+
+            ratingDropdown.on("change", applyFilters); 
+            
+            function applyFilters() {                                                                                                           
+                const selectedGenre = d3.select("#genre-filter").property("value");                                                             
+                const selectedStudio = d3.select("#studio-filter").property("value"); 
+                const selectedRating = d3.select("#rating-filter").property("value");                                                             
+                                                                                                                                                
+                const filtered = data.filter(d => {                                                                                             
+                    const genreMatch = selectedGenre === "All" || d.genre.split(", ").includes(selectedGenre);                                  
+                    const studioMatch = selectedStudio === "All" || d["studio_name"] === selectedStudio; 
+                    const ratingMatch = selectedRating === "All" || d["rating"] === selectedRating;                                               
+                    return genreMatch && studioMatch && ratingMatch;                                                           
+                });                                                                                                                             
+                                                                                                                                                                                                  
+                
+            dataset = filtered;
+                                                                                                                                              
+            drawChart();                                                                                                              
+            }
+
+            dataset = data;
+            drawChart();
+        });
+
+    
+        const tooltip = d3.select("body")                                                                                                     
+            .append("div")                                                                                                                    
+            .attr("class", "tooltip")                                                                                                         
+            .style("position", "absolute")                                                                                                    
+            .style("background", "white")                                                                                                     
+            .style("padding", "5px")                                                                                                          
+            .style("border", "1px solid #ccc")                                                                                                
+            .style("pointer-events", "none")                                                                                                  
+            .style("opacity", 0); 
+
+        // Add Y axis
+        function drawChart() {
+            svg.selectAll("circle").remove();                                                                                                   
+            svg.selectAll("g").remove();                                                                                                        
+            svg.selectAll("text").remove();  
+
+            var xMax = d3.max(dataset, function (d) { return +d["tomatometer_rating"] })
+            var x = d3.scaleLinear()
+                .range([0, width])
+                .domain([0, xMax])
+                // .padding(0.5);
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x))
+                .selectAll("text")
+                .attr("transform", "translate(-10,0)rotate(-45)")
+                .style("text-anchor", "end");
+
+            var yMax = d3.max(dataset, function (d) { return +d["audience_rating"] })
+            var y = d3.scaleLinear()
+                .domain([0, yMax])
+                .range([height, 0]);
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            const ratingColor = d3.scaleOrdinal(d3.schemeObservable10);
+            
+
+            // circles
+            svg.selectAll("scatters")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function (d) { return x(d["tomatometer_rating"]); })
+                .attr("cy", function (d) { return y(d["audience_rating"]); })
+                .attr("r", 3)
+                .attr("fill", function (d) { return ratingColor(d.rating); })
+                .on("mouseover", (evt, d) => {
+                    d3.select(evt.currentTarget).style("opacity", 1);  // show circle                                           
+                    tooltip                                                                                                     
+                        .style("opacity", 1)                                                                                    
+                        .html(`Title: ${d["movie_title"]}
+                        <br>Genre(s): ${d["genre"]}
+                        <br>Rating: ${d["rating"]}
+                        <br>Tomatometer Rating: ${d["tomatometer_rating"]}
+                        <br>Audience Rating: ${d["audience_rating"]}`)                                                       
+                        .style("left", (evt.pageX + 10) + "px")                                                                 
+                        .style("top", (evt.pageY - 10) + "px"); 
+                })
+                .on("mouseout", (evt) => {                                                                                      
+                tooltip.style("opacity", 0); 
+                });
+
+
+
+
+            svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(" + (width/2) + " ," + (margin.top - 70) + ")")
+            .text("Tomatometer vs. Audience Ratings");
+
+            //x label
+            svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top) + ")")
+            .text("Tomatometer Rating");
+
+            //y label
+            svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -margin.left + 20)
+            .attr("x", -height / 2)
+            .text("Audience Rating");
+
+
+        }
+
+
+    </script>
+</body>
+
+</html>

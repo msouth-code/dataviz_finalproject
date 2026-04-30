@@ -1,0 +1,180 @@
+<!-- <div class='tableauPlaceholder' id='viz1777561064914' style='position: relative'><noscript><a href='#'><img alt='Average Tomatometer Rating by Genre from 1985 to 2019 ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;fi&#47;finalviz_17775610127530&#47;Sheet2&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='finalviz_17775610127530&#47;Sheet2' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;fi&#47;finalviz_17775610127530&#47;Sheet2&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /><param name='filter' value='publish=yes' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1777561064914');                    var vizElement = divElement.getElementsByTagName('object')[0];                    vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';                    var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script> -->
+
+<!-- PLEASE SEE README.md FOR REFERENCES -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css">
+    <title>Search</title>
+    <!-- <link rel="stylesheet" href="css/style.css"> -->
+    <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
+
+</head>
+
+<body>
+    <a href="../index.html">Back</a>
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Search for a movie...">
+        <ul id="suggestions"></ul>
+    </div>
+
+    <div class="slidecontainer" style="display: none;" id="slider">
+        <input type="range" min="0" max="100" value="50" class="slider" id="myRange"></input>
+        <p>Rating: <span id="demo"></span></p>
+    </div>
+
+    <div class="buttoncontainer" style="display: none;" id="enterButton">
+        <button id="enter">Enter</button>
+    </div>
+
+    <div id="movie-info" style="background-color: antiquewhite;"></div>
+    <div id="chart" style="display: none; background-color: antiquewhite;"></div>
+
+    <script>
+        let allMovies = [];
+        let selectedMovie = null;
+
+        d3.csv("../data/mini_movieratings.csv").then(function (data) {
+            allMovies = data;
+        });
+
+        const input = d3.select("#search-input");
+        const userRating = d3.select("#user-rating");
+        const suggestionsList = d3.select("#suggestions");
+        const movieInfo = d3.select("#movie-info");
+
+        input.on("input", function () {
+            const searchTerm = this.value.toLowerCase();
+
+            if (searchTerm.length === 0) {
+                suggestionsList.html("");
+                return;
+            }
+
+            const matches = allMovies.filter(d =>
+                d.movie_title.toLowerCase().includes(searchTerm)
+            ).slice(0, 10);
+
+            suggestionsList.html("");
+            suggestionsList.selectAll("li")
+                .data(matches)
+                .enter()
+                .append("li")
+                .append("a")
+                .style("cursor", "pointer")
+                .text(d => d.movie_title)
+                .on("click", function (evt, d) {
+                    suggestionsList.html("");
+                    userRating.html("What would you rate this movie out of 100?")
+
+                    d3.select("#slider").style("display", "block");
+
+                    const slider = document.getElementById('myRange');
+                    const output = document.getElementById('demo');
+
+                    output.innerHTML = slider.value;
+
+                    slider.oninput = function () {
+                        output.innerHTML = this.value;
+                    }
+
+                    selectedMovie = d;  // Store the movie                                                                                                                    
+                    d3.select("#enterButton").style("display", "block");
+
+                    document.getElementById("enter").onclick = function () {
+                        const userRate = +document.getElementById('myRange').value;
+                        selectMovie(selectedMovie, userRate);
+                    }
+                    //                                                                                                     
+                });
+        });
+
+
+
+        function selectMovie(movie, userRate) {
+            input.property("value", movie.movie_title);
+            suggestionsList.html("");
+
+            movieInfo.style("display", "block")
+                .html(`                                                                                                                                           
+              <h2>${movie.movie_title}</h2>      
+              <p>${movie.movie_info}</p>                                                                                                           
+              <p><strong>Genre:</strong> ${movie.genre}</p>                                                                                                 
+              <p><strong>Tomatometer:</strong> ${movie.tomatometer_rating}%</p>                                                                             
+              <p><strong>Audience Rating:</strong> ${movie.audience_rating}%</p>                                                                            
+          `);
+
+            // Show and update chart                                                                                                                              
+            d3.select("#chart").style("display", "block");
+            updateBarChart(+movie.tomatometer_rating, +movie.audience_rating, userRate);
+        }
+
+        d3.select("body").on("click", function (evt) {
+            if (!evt.target.closest(".search-container")) {
+                suggestionsList.html("");
+            }
+        });
+
+        const margin = { top: 30, right: 30, bottom: 50, left: 60 };
+        const chartWidth = 400 - margin.left - margin.right;
+        const chartHeight = 300 - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", chartWidth + margin.left + margin.right)
+            .attr("height", chartHeight + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        function updateBarChart(tomatometer, audience, userRating) {
+            svg.selectAll("*").remove();
+
+            const data = [
+                { label: "Tomatometer", value: tomatometer },
+                { label: "Audience", value: audience },
+                { label: "Your Rating", value: userRating }
+            ];
+
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.label))
+                .range([0, chartWidth])
+                .padding(0.3);
+
+            const y = d3.scaleLinear()
+                .domain([0, 100])
+                .range([chartHeight, 0]);
+
+            svg.append("g")
+                .attr("transform", `translate(0,${chartHeight})`)
+                .call(d3.axisBottom(x));
+
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            svg.selectAll("rect")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr("x", d => x(d.label))
+                .attr("y", d => y(d.value))
+                .attr("width", x.bandwidth())
+                .attr("height", d => chartHeight - y(d.value))
+                .attr("fill", (d, i) => ["#e74c3c", "#3498db", "#2ecc71"][i]);
+
+            svg.selectAll(".label")
+                .data(data)
+                .enter()
+                .append("text")
+                .attr("x", d => x(d.label) + x.bandwidth() / 2)
+                .attr("y", d => y(d.value) - 5)
+                .attr("text-anchor", "middle")
+                .text(d => d.value);
+        } 
+    </script>
+
+</body>
+
+</html>

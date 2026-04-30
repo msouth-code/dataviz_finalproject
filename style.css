@@ -1,14 +1,96 @@
 body {
-  background-color: rgb(244, 220, 247);
-  cursor: url("assets/cheezit.png"), auto;
+  background-color: rgb(166, 22, 22);
+  /* cursor: url("assets/cheezit.png"), auto; */
   /* <a target="_blank" href="https://icons8.com/icon/9L9i0wP3MWGL/cursor">Cursor</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a> */
 }
-h1 {
-    color:darkblue
+
+@font-face {
+  font-family: movieTheatreFont;
+  /* set name */
+  src: url('../fonts/StandingRoomOnlyNF.otf') format('woff2');
+  /* url of the font */
 }
-h3 {
-  color: red;
+
+@media screen and (max-width: 600px) {
+  .column {
+    width: 100%;
+  }
 }
-p {
-  color: black;
+
+.column {
+  float: left;
+  width: 25%;
+  height: 550px;
 }
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.search-container {
+  position: relative;
+  width: 300px;
+}
+
+#search-input {
+  background-position: 10px 12px;
+  background-repeat: no-repeat; 
+  width: 100%; 
+  font-size: 16px; 
+  padding: 12px 20px 12px 40px; 
+  border: 1px solid #ddd; 
+  margin-bottom: 12px; 
+}
+
+#suggestions {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+#suggestions li a {
+  border: 1px solid #bbb; /* Add a border to all links */
+  margin-top: -1px; /* Prevent double borders */
+  background-color: #f6f6f6; /* Grey background color */
+  padding: 12px; /* Add some padding */
+  text-decoration: none; /* Remove default text underline */
+  font-size: 18px; /* Increase the font-size */
+  color: black; /* Add a black text color */
+  display: block; /* Make it into a block element to fill the whole list */
+}
+
+#suggestions li a:hover:not(.header) {
+  background-color: #a2a1a1;
+}
+
+#movie-info {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #ccc;
+  display: none;
+}
+
+  .dot {
+    height: 100px;
+    width: 100px;
+    background-color: #fcffbb;
+    border-radius: 50%;
+    align-items: center;
+  }
+
+  h1 {
+    color: rgb(255, 223, 66);
+    font-family: movieTheatreFont;
+    text-align: center;
+  }
+
+  h3 {
+    color: red;
+  }
+
+  p {
+    color: black;
+  }
