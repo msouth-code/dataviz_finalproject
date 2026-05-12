@@ -1,0 +1,133 @@
+<!-- PLEASE SEE README.md FOR REFERENCES -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css">
+    <title>Director-Actor Collaborations</title>
+    <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
+</head>
+
+<body>
+    <a class="back-button" href="../index.html">Back</a>
+    <div class="page-header">Director-Actor Collaborations</div>
+    <p> </p>
+
+    <div class="chart-container">
+        <div id="tree-chart"></div>
+    </div>
+
+    <script type="text/javascript">
+        const margin = { top: 40, right: 200, bottom: 40, left: 150 };
+        const width = 1400 - margin.left - margin.right;
+        const height = 800 - margin.top - margin.bottom;
+
+        const svg = d3.select("#tree-chart")
+            .append("svg")
+            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+            .attr("preserveAspectRatio", "xMidYMid meet")
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        d3.csv("../data/directors.csv").then(function(data) {
+            console.log("Data loaded:", data.length, "movies");
+
+            // Build a map of director -> actor -> count
+            const directorActorMap = {};
+
+            data.forEach(movie => {
+                const directors = movie.directors.split(", ");
+                const cast = movie.cast.split(", ");
+
+                directors.forEach(director => {
+                    if (!directorActorMap[director]) {
+                        directorActorMap[director] = {};
+                    }
+                    cast.forEach(actor => {
+                        directorActorMap[director][actor] = (directorActorMap[director][actor] || 0) + 1;
+                    });
+                });
+            });
+
+            // Convert to hierarchy, filtering for actors in 2+ movies with same director
+            const hierarchyData = {
+                name: "Directors",
+                children: Object.entries(directorActorMap)
+                    .map(([director, actors]) => ({
+                        name: director,
+                        children: Object.entries(actors)
+                            .filter(([actor, count]) => count >= 4)
+                            .map(([actor, count]) => ({ name: actor, value: count }))
+                            .sort((a, b) => b.value - a.value)
+                            .slice(0, 10)  // limit to top 10 actors per director
+                    }))
+                    .filter(d => d.children.length > 0)
+                    .sort((a, b) => b.children.length - a.children.length)
+            };
+
+            console.log("Directors with repeat actors:", hierarchyData.children.length);
+            console.log(hierarchyData);
+
+            // Create the tree layout
+            const root = d3.hierarchy(hierarchyData);
+
+            const treeLayout = d3.tree()
+                .size([height, width - 100]);
+
+            treeLayout(root);
+
+            // Draw links
+            svg.selectAll(".link")
+                .data(root.links())
+                .enter()
+                .append("path")
+                .attr("class", "link")
+                .attr("fill", "none")
+                .attr("stroke", "#ccc")
+                .attr("stroke-width", 2)
+                .attr("d", d3.linkHorizontal()
+                    .x(d => d.y)
+                    .y(d => d.x));
+
+            // Draw nodes
+            const nodes = svg.selectAll(".node")
+                .data(root.descendants())
+                .enter()
+                .append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.y},${d.x})`);
+
+            // Add circles for nodes
+            nodes.append("circle")
+                .attr("r", d => d.depth === 0 ? 12 : d.depth === 1 ? 8 : 5)
+                .attr("fill", d => {
+                    if (d.depth === 0) return "#ff6b6b";  // root
+                    if (d.depth === 1) return "#4ecdc4";  // directors
+                    return "#ffe66d";  // actors
+                })
+                .attr("stroke", "#333")
+                .attr("stroke-width", 1);
+
+            // Add labels
+            nodes.append("text")
+                .attr("dy", "0.35em")
+                .attr("x", d => d.children ? -15 : 10)
+                .attr("text-anchor", d => d.children ? "end" : "start")
+                .attr("fill", "black")
+                .attr("font-size", "20px")
+                .text(d => {
+                    if (d.data.value) {
+                        return `${d.data.name} (${d.data.value})`;
+                    }
+                    return d.data.name;
+                });
+
+        }).catch(function(error) {
+            console.error("Error loading CSV:", error);
+        });
+    </script>
+</body>
+
+</html>

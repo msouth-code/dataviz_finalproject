@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../style.css">
     <title>SCatterplot Chart</title>
     <!-- <link rel="stylesheet" href="css/style.css"> -->
     <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
@@ -13,9 +13,14 @@
 </head>
 
 <body>
-    <a href="../index.html">Back</a>
-    <div></div>
-    <div id="my_dataviz"></div>
+    <a class="back-button" href="../index.html">Back</a>
+    <div class="page-header">Do Critics and The Audience Agree?</div>
+    <p> </p>
+
+    <div class="chart-container">
+        <div id="my_dataviz"></div>
+        <div id="filters"></div>
+    </div>
     <script type="text/javascript">
         // Your beautiful D3 code will go here
         var dataset;  //Declare global variable, initially empty (undefined)
@@ -27,8 +32,8 @@
         // append the svg object to the body of the page
         var svg = d3.select("#my_dataviz")
             .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
+            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+            .attr("preserveAspectRatio", "xMidYMid meet")
             .append("g")
             .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
@@ -38,7 +43,7 @@
                 data.flatMap(d => d.genre.split(", "))                                                                                              
             )].sort();   
 
-            const genreDropdown = d3.select("body")
+            const genreDropdown = d3.select("#filters")
             .append("select")
             .attr("id", "genre-filter");
 
@@ -60,7 +65,7 @@
                 data.flatMap(d => d["studio_name"].split(", "))                                                                                              
             )].sort(); 
 
-            const studioDropdown = d3.select("body")
+            const studioDropdown = d3.select("#filters")
             .append("select")
             .attr("id", "studio-filter");
 
@@ -81,7 +86,7 @@
                 data.flatMap(d => d.rating.split(", "))                                                                                              
             )].sort(); 
             
-            const ratingDropdown = d3.select("body")
+            const ratingDropdown = d3.select("#filters")
             .append("select")
             .attr("id", "rating-filter");
 

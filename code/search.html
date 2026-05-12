@@ -15,23 +15,29 @@
 </head>
 
 <body>
-    <a href="../index.html">Back</a>
+    <a class="back-button" href="../index.html">Back</a>
+
+    <div class="page-header">See How Your Rating Compares!</div>
+    <p> </p>
+
     <div class="search-container">
         <input type="text" id="search-input" placeholder="Search for a movie...">
         <ul id="suggestions"></ul>
     </div>
 
-    <div class="slidecontainer" style="display: none;" id="slider">
+    <div class="slide-container" id="slider" style="display: none;">
         <input type="range" min="0" max="100" value="50" class="slider" id="myRange"></input>
-        <p>Rating: <span id="demo"></span></p>
+        <p style="font-size: 38px; text-align: center;">Rating: <span id="demo"></span></p>
     </div>
 
-    <div class="buttoncontainer" style="display: none;" id="enterButton">
-        <button id="enter">Enter</button>
+    <div class="button-container" style="display: none;" id="enterButton">
+        <button class="enter-button" id="enter">Enter</button>
     </div>
 
-    <div id="movie-info" style="background-color: antiquewhite;"></div>
-    <div id="chart" style="display: none; background-color: antiquewhite;"></div>
+    <div class="results-container" id="results" style="display: none;">
+        <div id="movie-info" style="background-color: antiquewhite;"></div>
+        <div id="chart" style="background-color: antiquewhite;"></div>
+    </div>
 
     <script>
         let allMovies = [];
@@ -82,7 +88,7 @@
                     }
 
                     selectedMovie = d;  // Store the movie                                                                                                                    
-                    d3.select("#enterButton").style("display", "block");
+                    d3.select("#enterButton").style("display", "flex");
 
                     document.getElementById("enter").onclick = function () {
                         const userRate = +document.getElementById('myRange').value;
@@ -107,8 +113,8 @@
               <p><strong>Audience Rating:</strong> ${movie.audience_rating}%</p>                                                                            
           `);
 
-            // Show and update chart                                                                                                                              
-            d3.select("#chart").style("display", "block");
+            // Show results container with movie info and chart
+            d3.select("#results").style("display", "flex");
             updateBarChart(+movie.tomatometer_rating, +movie.audience_rating, userRate);
         }
 
@@ -124,8 +130,8 @@
 
         const svg = d3.select("#chart")
             .append("svg")
-            .attr("width", chartWidth + margin.left + margin.right)
-            .attr("height", chartHeight + margin.top + margin.bottom)
+            .attr("viewBox", `0 0 ${chartWidth + margin.left + margin.right} ${chartHeight + margin.top + margin.bottom}`)
+            .attr("preserveAspectRatio", "xMidYMid meet")
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 

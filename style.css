@@ -11,10 +11,65 @@ body {
   /* url of the font */
 }
 
+@font-face {
+  font-family: marqueeFont;
+  /* set name */
+  src: url('../fonts/marquee.otf') format('woff2');
+  /* url of the font */
+}
+
 @media screen and (max-width: 600px) {
   .column {
     width: 100%;
   }
+}
+
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+#my_dataviz {                                                                                                  
+    display: flex;                                                                                               
+    justify-content: center;                                                                                     
+    width: 100%;                                                                                                 
+  }                                                                                                              
+                                                                                                                 
+  #my_dataviz svg {
+    background-color: white;
+    width: 1200px;
+    height: 700px;
+  }
+
+#tree-chart {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+#tree-chart svg {
+  background-color: white;
+  width: 1400px;
+  height: 800px;
+  border-radius: 8px;
+}  
+
+#filters {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+#filters select {
+  padding: 15px 25px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 18px;
+  cursor: pointer;
 }
 
 .column {
@@ -31,15 +86,19 @@ body {
 }
 
 .search-container {
+  display: flex;
+  flex-direction: column;
   position: relative;
-  width: 300px;
+  width: 800px;
+  align-items: center;
+  margin: 0 auto; 
 }
 
 #search-input {
   background-position: 10px 12px;
   background-repeat: no-repeat; 
   width: 100%; 
-  font-size: 16px; 
+  font-size: 40px; 
   padding: 12px 20px 12px 40px; 
   border: 1px solid #ddd; 
   margin-bottom: 12px; 
@@ -57,13 +116,50 @@ body {
   background-color: #f6f6f6; /* Grey background color */
   padding: 12px; /* Add some padding */
   text-decoration: none; /* Remove default text underline */
-  font-size: 18px; /* Increase the font-size */
+  font-size: 32px; /* Increase the font-size */
   color: black; /* Add a black text color */
   display: block; /* Make it into a block element to fill the whole list */
 }
 
 #suggestions li a:hover:not(.header) {
   background-color: #a2a1a1;
+}
+
+.slide-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 700px;
+  align-items: center;
+  margin: 0 auto;
+}
+
+#myRange {
+  width: 100%;
+  height: 15px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #ddd;
+  border-radius: 8px;
+}
+
+#myRange::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  background: #2196F3;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#myRange::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  background: #2196F3;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 #movie-info {
@@ -73,24 +169,115 @@ body {
   display: none;
 }
 
-  .dot {
-    height: 100px;
-    width: 100px;
-    background-color: #fcffbb;
-    border-radius: 50%;
-    align-items: center;
-  }
+.dot {
+  height: 100px;
+  width: 100px;
+  background-color: #fcffbb;
+  border-radius: 50%;
+  align-items: center;
+}
 
-  h1 {
-    color: rgb(255, 223, 66);
-    font-family: movieTheatreFont;
-    text-align: center;
-  }
+.marquee {                                                                                                     
+  overflow: hidden;                                                                                            
+  white-space: nowrap;
+  width: 100%;     
+  background-color: black;                                                                                  
+}
 
-  h3 {
-    color: red;
-  }
+.marquee-inner {                                                                                               
+  display: flex;                                                                                               
+  animation: marquee 15s linear infinite;  
+  font-family: marqueeFont;   
+  font-size: 48px;    
+  color: #fcffbb;                                                             
+} 
 
-  p {
-    color: black;
-  }
+.page-header {
+  font-family: marqueeFont;
+  font-size: 56px;
+  color: #fcffcb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes marquee {                                                                                           
+  0% { transform: translateX(100%); }                                                                             
+  100% { transform: translateX(-100%); }                                                                        
+} 
+
+.back-button {
+  background-color: #ddd;
+  border: none;
+  color: black;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 16px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.enter-button {
+  background-color: #ddd;
+  border: none;
+  color: black;
+  font-size: 30px;
+  padding: 10px 20px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 16px;
+}
+
+.results-container {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+#movie-info {
+  flex: 1;
+  font-size: 20px;
+  max-width: 45%;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+#chart {
+  flex: 1;
+  max-width: 45%;
+  padding: 15px;
+  border-radius: 8px;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+}
+
+#chart svg {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+h1 {
+  color: rgb(255, 223, 66);
+  font-family: movieTheatreFont;
+  text-align: center;
+}
+
+h3 {
+  color: red;
+}
+
+p {
+  color: black;
+}
