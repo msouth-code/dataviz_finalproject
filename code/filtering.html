@@ -161,7 +161,14 @@
             svg.append("g")
                 .call(d3.axisLeft(y));
 
-            const ratingColor = d3.scaleOrdinal(d3.schemeObservable10);
+            const ratingColorMap = {
+                "G": "#2ecc71",        // green
+                "PG": "#3498db",       // blue
+                "PG-13": "#f39c12",    // orange
+                "R": "#e74c3c",        // red
+                "NC17": "#8f00ff",      
+            };
+            const ratingColor = d => ratingColorMap[d] || "#7f8c8d";
             
 
             // circles
@@ -180,6 +187,7 @@
                         .html(`Title: ${d["movie_title"]}
                         <br>Genre(s): ${d["genre"]}
                         <br>Rating: ${d["rating"]}
+                        <br>Studio: ${d["studio_name"]}
                         <br>Tomatometer Rating: ${d["tomatometer_rating"]}
                         <br>Audience Rating: ${d["audience_rating"]}`)                                                       
                         .style("left", (evt.pageX + 10) + "px")                                                                 
@@ -211,7 +219,29 @@
             .attr("x", -height / 2)
             .text("Audience Rating");
 
+            // Legend (horizontal, below x-axis title)
+            const ratings = ["G", "PG", "PG-13", "R", "NC17"];
+            const legendSpacing = 60;
+            const legendWidth = (ratings.length - 1) * legendSpacing + 40;
 
+            const legend = svg.append("g")
+                .attr("transform", `translate(${(width - legendWidth) / 2}, ${height + margin.bottom - 15})`);
+
+            ratings.forEach((rating, i) => {
+                const legendItem = legend.append("g")
+                    .attr("transform", `translate(${i * legendSpacing}, 0)`);
+
+                legendItem.append("rect")
+                    .attr("width", 12)
+                    .attr("height", 12)
+                    .attr("fill", ratingColor(rating));
+
+                legendItem.append("text")
+                    .attr("x", 16)
+                    .attr("y", 10)
+                    .attr("font-size", "12px")
+                    .text(rating);
+            });
         }
 
 

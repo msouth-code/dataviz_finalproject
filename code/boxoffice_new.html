@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css">
+    <title>Weekend Box Office by Country — Choropleth Map</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #f8f7f4;
+            --surface: #efeee9;
+            --card: #ffffff;
+            --text-primary: #1a1a18;
+            --text-secondary: #5f5e5a;
+            --text-tertiary: #888780;
+            --border: rgba(0, 0, 0, .12);
+            --border-strong: rgba(0, 0, 0, .22);
+            --radius: 10px;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121210;
+                --surface: #1c1c19;
+                --card: #242421;
+                --text-primary: #f0efe8;
+                --text-secondary: #a8a79f;
+                --text-tertiary: #6a6960;
+                --border: rgba(255, 255, 255, .1);
+                --border-strong: rgba(255, 255, 255, .2);
+            }
+        }
+
+        body {
+            background-color: rgb(166, 22, 22);
+            color: var(--text-primary);
+            font-family: var(--font);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1.5rem 3rem;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 1060px;
+        }
+
+        header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: white;
+            margin-top: 4px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            font-family: var(--font);
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 0.5px solid var(--border-strong);
+            background: white;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        button:hover {
+            background: var(--surface);
+        }
+
+        button:active {
+            transform: scale(.97);
+        }
+
+        .map-wrap {
+            position: relative;
+            width: 100%;
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 0.5px solid var(--border);
+            cursor: grab;
+        }
+
+        .map-wrap:active {
+            cursor: grabbing;
+        }
+
+        svg {
+            width: 100%;
+            display: block;
+        }
+
+        .ocean {
+            fill: #cde5f4;
+        }
+
+        .graticule {
+            fill: none;
+            stroke: rgba(255, 255, 255, .28);
+            stroke-width: .5;
+        }
+
+        .border {
+            fill: none;
+            stroke: rgba(255, 255, 255, .65);
+            stroke-width: .45;
+        }
+
+        .sphere {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: .8;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .ocean {
+                fill: #0d1d2e;
+            }
+
+            .graticule {
+                stroke: rgba(255, 255, 255, .1);
+            }
+
+            .border {
+                stroke: rgba(255, 255, 255, .25);
+            }
+        }
+
+        #tooltip {
+            position: absolute;
+            display: none;
+            background: var(--card);
+            border: 0.5px solid var(--border-strong);
+            border-radius: 8px;
+            padding: 10px 14px;
+            pointer-events: none;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 10;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+        }
+
+        #tt-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        #tt-val {
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        #tt-rank {
+            color: var(--text-tertiary);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .legend-section {
+            margin-top: 14px;
+        }
+
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 0;
+            margin-top: 4px;
+        }
+
+        .legend-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-bar {
+            flex: 1;
+            height: 11px;
+            border-radius: 6px;
+        }
+
+        .legend-end {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            white-space: nowrap;
+        }
+
+        .meta-row {
+            display: flex;
+            gap: 20px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        footer {
+            margin-top: 2rem;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+   
+    <div class="page">
+         <a class="back-button" href="../index.html">Back</a>
+        <header>
+            <div>
+                <h1>Weekend Box Office by Country</h1>
+                <p class="subtitle">Weekend Gross &middot; USD &middot; Scroll to zoom &middot; Drag to pan
+                    &middot; Hover to inspect</p>
+            </div>
+            <div class="controls">
+                <button id="btn-reset">Reset view</button>
+            </div>
+        </header>
+
+        <div class="map-wrap" id="map-wrap">
+            <svg id="wmap"></svg>
+            <div id="tooltip">
+                <div id="tt-name"></div>
+                <div id="tt-topmovie"></div>
+                <div id="tt-val"></div>
+                <div id="tt-rank"></div>
+            </div>
+        </div>
+
+        <div class="legend-section">
+            <div class="legend-row">
+                <span class="legend-end">Low gross</span>
+                <div class="legend-bar" id="legend-bar"></div>
+                <span class="legend-end">High gross</span>
+            </div>
+            <div class="legend-labels">
+                <span class="legend-label">$1K</span>
+                <span class="legend-label">$10K</span>
+                <span class="legend-label">$100K</span>
+                <span class="legend-label">$10M</span>
+                <span class="legend-label">$160M+</span>
+            </div>
+        </div>
+
+        <div class="meta-row">
+            <span class="meta-item"><span class="swatch" style="background:#c8cdd4"></span>No data</span>
+            <span class="meta-item">Color scale: logarithmic</span>
+            <span class="meta-item">~170 countries</span>
+        </div>
+
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+    <script>
+        const gdp = {
+            4: 0, 8: 5656, 12: 0, 24: 0, 32: 1725000, 36: 5703508, 40: 202792, 50: 1133,
+            56: 106497, 64: 0, 68: 17630, 76: 8106000, 100: 198985, 104: 0, 116: 0, 120: 0,
+            124: 0, 144: 7828, 148: 0, 152: 74141, 156: 4775000, 170: 298820, 174: 0,
+            178: 0, 180: 0, 188: 25310, 191: 118652, 192: 0, 196: 30173, 203: 581207,
+            204: 0, 208: 64000, 218: 48414, 222: 7365, 231: 0, 232: 0, 246: 42817,
+            250: 9772960, 268: 0, 276: 6035020, 288: 0, 300: 180832, 320: 14748, 324: 0,
+            332: 0, 340: 8836, 348: 615874, 356: 2060000, 360: 277200, 364: 0, 368: 1779,
+            372: 0, 376: 211260, 380: 6692473, 384: 0, 388: 0, 392: 10047748, 398: 0,
+            400: 1317, 404: 11033, 408: 0, 410: 71748, 414: 224924, 418: 0, 422: 29732,
+            426: 0, 428: 15337, 430: 0, 434: 0, 440: 151431, 442: 0, 454: 0, 458: 56584,
+            466: 0, 484: 9713000, 496: 9244, 504: 0, 508: 0, 516: 0, 524: 0, 528: 412600,
+            554: 598189, 558: 2986, 562: 0, 566: 11788, 578: 941456, 586: 11105, 604: 198621,
+            608: 107200, 616: 285397, 620: 558904, 624: 0, 634: 89267, 642: 98609,
+            643: 1450922, 646: 0, 682: 1418000, 686: 0, 694: 0, 702: 51000, 703: 21208,
+            704: 36167, 705: 85133, 706: 0, 710: 54299, 716: 0, 724: 387576, 728: 0,
+            729: 0, 752: 75000, 756: 33000, 760: 0, 764: 49174, 788: 0, 792: 286168,
+            800: 0, 804: 508000, 818: 84929, 826: 15616000, 840: 152389932, 858: 14744, 860: 0,
+            862: 20652, 887: 0, 894: 0, 31: 0
+        };
+
+        const topMovies = {
+            8: 'The Super Mario Galaxy Movie', 32: 'Michael', 36: 'Michael', 40: 'Shelter',
+            50: 'The Super Mario Galaxy Movie', 56: 'The Drama', 68: 'Shelter', 76: 'Michael',
+            100: 'Michael', 144: 'The Super Mario Galaxy Movie', 152: 'The Drama', 156: 'Michael',
+            170: 'Shelter', 188: 'The Drama', 191: 'Michael', 196: 'The Super Mario Galaxy Movie',
+            203: 'Michael', 208: 'Shelter', 218: 'Shelter', 222: 'Shelter', 246: 'The Drama',
+            250: 'Michael', 276: 'Michael', 300: 'Shelter', 320: 'Shelter', 340: 'Shelter',
+            348: 'Michael', 356: 'Michael', 360: 'Shelter', 368: 'The Strangers: Chapter 3',
+            376: 'Shelter', 380: 'Michael', 392: 'The Super Mario Galaxy Movie', 400: 'The Strangers: Chapter 3',
+            404: 'The Super Mario Galaxy Movie', 410: 'Shelter', 414: 'Shelter', 422: 'Shelter',
+            428: 'The Drama', 440: 'Michael', 458: 'Shelter', 484: 'Michael', 496: 'The Super Mario Galaxy Movie',
+            528: 'Shelter', 554: 'Michael', 558: 'The Drama', 566: 'You, Me & Tuscany',
+            578: 'Michael', 586: 'The Super Mario Galaxy Movie', 604: 'Shelter', 608: 'Shelter',
+            616: 'The Drama', 620: 'Michael', 634: 'Shelter', 642: 'Shelter', 643: 'Angels of War',
+            682: 'Michael', 702: 'Shelter', 703: 'The Drama', 704: 'Shelter', 705: 'Michael',
+            710: 'Shelter', 724: 'Shelter', 752: 'Hoppers', 756: 'Hoppers', 764: 'The Drama',
+            792: 'Michael', 804: 'Michael', 818: 'Shelter', 826: 'Michael', 840: 'Michael',
+            858: 'The Drama', 862: 'Shelter'
+        };
+
+        const names = {
+            4: 'Afghanistan', 8: 'Albania', 12: 'Algeria', 24: 'Angola', 31: 'Azerbaijan',
+            32: 'Argentina', 36: 'Australia', 40: 'Austria', 50: 'Bangladesh', 56: 'Belgium',
+            64: 'Bhutan', 68: 'Bolivia', 76: 'Brazil', 100: 'Bulgaria', 104: 'Myanmar',
+            116: 'Cambodia', 120: 'Cameroon', 124: 'Canada', 144: 'Sri Lanka', 148: 'Chad',
+            152: 'Chile', 156: 'China', 170: 'Colombia', 174: 'Comoros', 178: 'Congo',
+            180: 'Dem. Rep. Congo', 188: 'Costa Rica', 191: 'Croatia', 192: 'Cuba',
+            196: 'Cyprus', 203: 'Czech Republic', 204: 'Benin', 208: 'Denmark', 218: 'Ecuador',
+            222: 'El Salvador', 231: 'Ethiopia', 232: 'Eritrea', 246: 'Finland', 250: 'France',
+            268: 'Georgia', 276: 'Germany', 288: 'Ghana', 300: 'Greece', 320: 'Guatemala',
+            324: 'Guinea', 332: 'Haiti', 340: 'Honduras', 348: 'Hungary', 356: 'India',
+            360: 'Indonesia', 364: 'Iran', 368: 'Iraq', 372: 'Ireland', 376: 'Israel',
+            380: 'Italy', 384: "Côte d'Ivoire", 388: 'Jamaica', 392: 'Japan', 398: 'Kazakhstan',
+            400: 'Jordan', 404: 'Kenya', 408: 'North Korea', 410: 'South Korea', 414: 'Kuwait',
+            418: 'Laos', 422: 'Lebanon', 426: 'Lesotho', 428: 'Latvia', 430: 'Liberia',
+            434: 'Libya', 440: 'Lithuania', 442: 'Luxembourg', 454: 'Malawi', 458: 'Malaysia',
+            466: 'Mali', 484: 'Mexico', 496: 'Mongolia', 504: 'Morocco', 508: 'Mozambique',
+            516: 'Namibia', 524: 'Nepal', 528: 'Netherlands', 554: 'New Zealand', 558: 'Nicaragua',
+            562: 'Niger', 566: 'Nigeria', 578: 'Norway', 586: 'Pakistan', 604: 'Peru',
+            608: 'Philippines', 616: 'Poland', 620: 'Portugal', 624: 'Guinea-Bissau',
+            634: 'Qatar', 642: 'Romania', 643: 'Russia', 646: 'Rwanda', 682: 'Saudi Arabia',
+            686: 'Senegal', 694: 'Sierra Leone', 702: 'Singapore', 703: 'Slovakia',
+            704: 'Vietnam', 705: 'Slovenia', 706: 'Somalia', 710: 'South Africa', 716: 'Zimbabwe',
+            724: 'Spain', 728: 'South Sudan', 729: 'Sudan', 752: 'Sweden', 756: 'Switzerland',
+            760: 'Syria', 764: 'Thailand', 788: 'Tunisia', 792: 'Turkey', 800: 'Uganda',
+            804: 'Ukraine', 818: 'Egypt', 826: 'United Kingdom', 840: 'United States',
+            858: 'Uruguay', 860: 'Uzbekistan', 862: 'Venezuela', 887: 'Yemen', 894: 'Zambia'
+        };
+
+        // Build ranked list for tooltip context
+        const ranked = Object.entries(gdp)
+            .sort((a, b) => b[1] - a[1])
+            .map(([id], i) => [+id, i + 1]);
+        const rankMap = Object.fromEntries(ranked);
+        const total = ranked.length;
+
+        const W = 960, H = 500;
+        const isDark = matchMedia('(prefers-color-scheme:dark)').matches;
+
+        // Color scale: warm → cool, log
+        function colorRamp(t) {
+            const stops = [
+                [0, '#fff3d6'],
+                [0.2, '#fdb863'],
+                [0.45, '#80cdc1'],
+                [0.7, '#2b83ba'],
+                [1, '#1a3156']
+            ];
+            let i = stops.findIndex(s => s[0] >= t);
+            if (i <= 0) return stops[0][1];
+            if (i >= stops.length) return stops[stops.length - 1][1];
+            const [t0, c0] = stops[i - 1], [t1, c1] = stops[i];
+            return d3.interpolateRgb(c0, c1)((t - t0) / (t1 - t0));
+        }
+        const colorScale = d3.scaleSequentialLog([1000, 160000000], colorRamp);
+        const noDataColor = isDark ? '#2c3038' : '#c8cdd4';
+
+        const svg = d3.select('#wmap').attr('viewBox', `0 0 ${W} ${H}`);
+        const wrap = document.getElementById('map-wrap');
+        const tip = document.getElementById('tooltip');
+
+        svg.append('rect').attr('width', W).attr('height', H).attr('class', 'ocean');
+
+        const projection = d3.geoNaturalEarth1().scale(153).translate([W / 2, H / 2]);
+        const path = d3.geoPath(projection);
+
+        svg.append('path').datum(d3.geoGraticule()()).attr('class', 'graticule').attr('d', path);
+        svg.append('path').datum({ type: 'Sphere' }).attr('class', 'sphere').attr('d', path);
+
+        const g = svg.append('g');
+
+        function fmtGDP(v) {
+            if (v >= 1000) return '$' + d3.format(',.0f')(v);
+            return '$' + v;
+        }
+
+        d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
+            const countries = topojson.feature(world, world.objects.countries);
+            const borders = topojson.mesh(world, world.objects.countries, (a, b) => a !== b);
+
+            g.selectAll('path.country')
+                .data(countries.features)
+                .join('path')
+                .attr('class', 'country')
+                .attr('d', path)
+                .attr('fill', d => {
+                    const v = gdp[+d.id];
+                    return v ? colorScale(v) : noDataColor;
+                })
+                .attr('stroke', 'none')
+                .on('mousemove', function (event, d) {
+                    const [mx, my] = d3.pointer(event, wrap);
+                    const id = +d.id;
+                    const v = gdp[id];
+                    const name = names[id] || ('Country #' + id);
+                    document.getElementById('tt-name').textContent = name;
+                    const movie = topMovies[id];
+                    document.getElementById('tt-topmovie').textContent = movie ? '#1 Release: ' + movie : ''; 
+                    document.getElementById('tt-val').textContent = v ? 'Weekend Gross: ' + fmtGDP(v) : 'No data available';
+                    const r = rankMap[id];
+                    document.getElementById('tt-rank').textContent = r ? `Rank #${r} of ${total}` : '';
+                    const tw = tip.offsetWidth || 180, th = tip.offsetHeight || 60;
+                    const ww = wrap.offsetWidth, wh = wrap.offsetHeight;
+                    tip.style.left = Math.min(mx + 16, ww - tw - 8) + 'px';
+                    tip.style.top = Math.max(Math.min(my - th / 2, wh - th - 8), 8) + 'px';
+                    tip.style.display = 'block';
+                    d3.select(this).attr('stroke', isDark ? 'rgba(255,255,255,.6)' : 'rgba(0,0,0,.5)').attr('stroke-width', .9).raise();
+                })
+                .on('mouseleave', function () {
+                    tip.style.display = 'none';
+                    d3.select(this).attr('stroke', 'none');
+                });
+
+            g.append('path').datum(borders).attr('class', 'border').attr('d', path);
+
+            const zoom = d3.zoom()
+                .scaleExtent([1, 10])
+                .translateExtent([[0, 0], [W, H]])
+                .on('zoom', e => g.attr('transform', e.transform));
+            svg.call(zoom).on('dblclick.zoom', null);
+            document.getElementById('btn-reset').onclick = () =>
+                svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+        });
+
+        // Legend gradient
+        const stops = [[0, '#fff3d6'], [.2, '#fdb863'], [.45, '#80cdc1'], [.7, '#2b83ba'], [1, '#1a3156']];
+        document.getElementById('legend-bar').style.background =
+            `linear-gradient(to right,${stops.map(s => `${s[1]} ${s[0] * 100}%`).join(',')})`;
+    </script>
+</body>
+
+</html>

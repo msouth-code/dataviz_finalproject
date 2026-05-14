@@ -11,12 +11,29 @@
 </head>
 
 <body>
+    <div class="page" style="width: 100%; max-width: 1360px; margin: 0 auto;">
     <a class="back-button" href="../index.html">Back</a>
-    <div class="page-header">Director-Actor Collaborations</div>
+    <div class="page-header" style="justify-content: center; align-items: center;">Director-Actor Collaborations</div>
     <p> </p>
 
     <div class="chart-container">
         <div id="tree-chart"></div>
+        <div id="tree-tooltip" style="
+            position: fixed;
+            display: none;
+            background: white;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px 14px;
+            pointer-events: none;
+            font-size: 14px;
+            max-width: 300px;
+            z-index: 100;
+            box-shadow: 0 4px 16px rgba(0,0,0,.2);
+        ">
+            <div id="tt-title" style="font-weight: bold; margin-bottom: 5px;"></div>
+            <div id="tt-movies" style="color: #333;"></div>
+        </div>
     </div>
 
     <script type="text/javascript">
@@ -31,35 +48,63 @@
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
+        const tooltip = document.getElementById('tree-tooltip');
+        const ttTitle = document.getElementById('tt-title');
+        const ttMovies = document.getElementById('tt-movies');
+
         d3.csv("../data/directors.csv").then(function(data) {
             console.log("Data loaded:", data.length, "movies");
 
-            // Build a map of director -> actor -> count
+            // Build a map of director -> actor -> { count, movies }
             const directorActorMap = {};
+            // Also track all movies per director
+            const directorMovies = {};
 
             data.forEach(movie => {
                 const directors = movie.directors.split(", ");
                 const cast = movie.cast.split(", ");
+                const title = movie.movie_title;
 
                 directors.forEach(director => {
+                    // Track director's movies
+                    if (!directorMovies[director]) {
+                        directorMovies[director] = [];
+                    }
+                    if (!directorMovies[director].includes(title)) {
+                        directorMovies[director].push(title);
+                    }
+
+                    // Track director-actor collaborations
                     if (!directorActorMap[director]) {
                         directorActorMap[director] = {};
                     }
                     cast.forEach(actor => {
-                        directorActorMap[director][actor] = (directorActorMap[director][actor] || 0) + 1;
+                        if (!directorActorMap[director][actor]) {
+                            directorActorMap[director][actor] = { count: 0, movies: [] };
+                        }
+                        directorActorMap[director][actor].count += 1;
+                        if (!directorActorMap[director][actor].movies.includes(title)) {
+                            directorActorMap[director][actor].movies.push(title);
+                        }
                     });
                 });
             });
 
-            // Convert to hierarchy, filtering for actors in 2+ movies with same director
+            // Convert to hierarchy, filtering for actors in 4+ movies with same director
             const hierarchyData = {
                 name: "Directors",
                 children: Object.entries(directorActorMap)
                     .map(([director, actors]) => ({
                         name: director,
+                        movies: directorMovies[director] || [],
                         children: Object.entries(actors)
-                            .filter(([actor, count]) => count >= 4)
-                            .map(([actor, count]) => ({ name: actor, value: count }))
+                            .filter(([actor, info]) => info.count >= 4)
+                            .map(([actor, info]) => ({
+                                name: actor,
+                                value: info.count,
+                                movies: info.movies,
+                                director: director
+                            }))
                             .sort((a, b) => b.value - a.value)
                             .slice(0, 10)  // limit to top 10 actors per director
                     }))
@@ -124,10 +169,81 @@
                     return d.data.name;
                 });
 
+            // Add tooltip events
+            nodes.on("mouseover", function(event, d) {
+                if (d.depth === 0) return; // Skip root node
+
+                if (d.depth === 1) {
+                    // Director node - show all movies by this director
+                    ttTitle.textContent = d.data.name + " - Movies:";
+                    const movies = d.data.movies || [];
+                    ttMovies.innerHTML = movies.length > 0 ? "• " + movies.join("<br>• ") : "No movies found";
+                } else if (d.depth === 2) {
+                    // Actor node - show movies with this actor by the parent director
+                    const director = d.parent.data.name;
+                    ttTitle.textContent = d.data.name + " with " + director + ":";
+                    const movies = d.data.movies || [];
+                    ttMovies.innerHTML = movies.length > 0 ? "• " + movies.join("<br>• ") : "No movies found";
+                }
+
+                tooltip.style.display = "block";
+
+                // Position tooltip, keeping it on screen
+                const ttWidth = tooltip.offsetWidth;
+                const ttHeight = tooltip.offsetHeight;
+                const viewWidth = window.innerWidth;
+                const viewHeight = window.innerHeight;
+
+                let left = event.clientX + 15;
+                let top = event.clientY - 10;
+
+                // Prevent right overflow
+                if (left + ttWidth > viewWidth - 10) {
+                    left = event.clientX - ttWidth - 15;
+                }
+                // Prevent bottom overflow
+                if (top + ttHeight > viewHeight - 10) {
+                    top = viewHeight - ttHeight - 10;
+                }
+                // Prevent top overflow
+                if (top < 10) {
+                    top = 10;
+                }
+
+                tooltip.style.left = left + "px";
+                tooltip.style.top = top + "px";
+            })
+            .on("mousemove", function(event) {
+                const ttWidth = tooltip.offsetWidth;
+                const ttHeight = tooltip.offsetHeight;
+                const viewWidth = window.innerWidth;
+                const viewHeight = window.innerHeight;
+
+                let left = event.clientX + 15;
+                let top = event.clientY - 10;
+
+                if (left + ttWidth > viewWidth - 10) {
+                    left = event.clientX - ttWidth - 15;
+                }
+                if (top + ttHeight > viewHeight - 10) {
+                    top = viewHeight - ttHeight - 10;
+                }
+                if (top < 10) {
+                    top = 10;
+                }
+
+                tooltip.style.left = left + "px";
+                tooltip.style.top = top + "px";
+            })
+            .on("mouseout", function() {
+                tooltip.style.display = "none";
+            });
+
         }).catch(function(error) {
             console.error("Error loading CSV:", error);
         });
     </script>
+    </div>
 </body>
 
 </html>

@@ -9,9 +9,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../style.css">
     <title>Search</title>
-    <!-- <link rel="stylesheet" href="css/style.css"> -->
     <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
-
+    <style>
+        .page-header {
+            font-size: 36px;
+        }
+        .search-container {
+            width: 500px;
+        }
+        #search-input {
+            font-size: 24px;
+            padding: 8px 12px;
+        }
+        #suggestions li a {
+            font-size: 18px;
+            padding: 8px;
+        }
+        .slide-container {
+            width: 300px;
+        }
+        .slide-container p {
+            font-size: 16px !important;
+        }
+        #myRange {
+            height: 8px;
+        }
+        .enter-button {
+            font-size: 14px;
+            padding: 6px 12px;
+        }
+        .results-container {
+            gap: 15px;
+            margin-top: 15px;
+        }
+        #movie-info {
+            font-size: 14px;
+            padding: 10px;
+        }
+        #movie-info h2 {
+            font-size: 18px;
+        }
+        #chart {
+            padding: 10px;
+            max-width: 300px;
+        }
+    </style>
 </head>
 
 <body>
@@ -74,6 +116,7 @@
                 .text(d => d.movie_title)
                 .on("click", function (evt, d) {
                     suggestionsList.html("");
+                    input.property("value", d.movie_title);
                     userRating.html("What would you rate this movie out of 100?")
 
                     d3.select("#slider").style("display", "block");
