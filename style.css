@@ -7,14 +7,14 @@ body {
 @font-face {
   font-family: movieTheatreFont;
   /* set name */
-  src: url('../fonts/StandingRoomOnlyNF.otf') format('woff2');
+  src: url('fonts/StandingRoomOnlyNF.otf') format('opentype');
   /* url of the font */
 }
 
 @font-face {
   font-family: marqueeFont;
   /* set name */
-  src: url('../fonts/marquee.otf') format('woff2');
+  src: url('fonts/marquee.otf') format('opentype');
   /* url of the font */
 }
 
