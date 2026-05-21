@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotten Tomatoes Data Visualization - Instruction Manual</title>
+    <style>
+        @page {
+            margin: 1in;
+            size: letter;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 40px;
+            background: #fff;
+        }
+
+        h1 {
+            color: #a61616;
+            border-bottom: 3px solid #a61616;
+            padding-bottom: 15px;
+            font-size: 2.2em;
+            margin-top: 0;
+        }
+
+        h2 {
+            color: #1a1a1a;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+            margin-top: 35px;
+            font-size: 1.5em;
+            page-break-after: avoid;
+        }
+
+        h3 {
+            color: #444;
+            margin-top: 25px;
+            font-size: 1.2em;
+            page-break-after: avoid;
+        }
+
+        .cover {
+            text-align: center;
+            padding: 100px 0;
+            page-break-after: always;
+        }
+
+        .cover h1 {
+            font-size: 2.8em;
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        .cover .subtitle {
+            font-size: 1.4em;
+            color: #666;
+            margin-bottom: 60px;
+        }
+
+        .cover .meta {
+            color: #888;
+            font-size: 1em;
+        }
+
+        .toc {
+            page-break-after: always;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .toc li {
+            padding: 8px 0;
+            border-bottom: 1px dotted #ccc;
+        }
+
+        .toc a {
+            color: #333;
+            text-decoration: none;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85em;
+            line-height: 1.5;
+            page-break-inside: avoid;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .command {
+            color: #569cd6;
+        }
+
+        .comment {
+            color: #6a9955;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9em;
+            page-break-inside: avoid;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #a61616;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .file-tree {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.85em;
+            line-height: 1.8;
+        }
+
+        .file-tree .folder {
+            color: #0066cc;
+            font-weight: bold;
+        }
+
+        .file-tree .file {
+            color: #333;
+        }
+
+        .file-tree .desc {
+            color: #888;
+            font-style: italic;
+        }
+
+        ul, ol {
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .checklist li::before {
+            content: "☐ ";
+            color: #a61616;
+        }
+
+        .section {
+            page-break-inside: avoid;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            pre {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cover Page -->
+    <div class="cover">
+        <h1>Rotten Tomatoes Data Visualization</h1>
+        <p class="subtitle">Project Instruction Manual</p>
+        <p class="meta">
+            A comprehensive guide for setup, development, and deployment<br><br>
+            <strong>Author:</strong> Miayunique South<br>
+        </p>
+    </div>
+
+    <!-- Section 1: Overview -->
+    <h2 id="overview">1. Project Overview</h2>
+
+    <h3>1.1 What Is This Project?</h3>
+    <p>
+        This is an interactive data visualization dashboard that analyzes Rotten Tomatoes movie ratings data.
+        The project presents multiple D3.js-powered visualizations exploring relationships between critic scores,
+        audience ratings, box office performance, genre trends, and director-actor collaborations.
+    </p>
+
+    <h3>1.2 Key Features</h3>
+    <ul>
+        <li><strong>Interactive Scatterplot:</strong> Compare critics vs. audience agreement with filtering by genre, studio, and rating</li>
+        <li><strong>Choropleth Map:</strong> Visualize worldwide weekend box office performance</li>
+        <li><strong>Trend Analysis:</strong> Track Tomatometer scores by rating classification over time</li>
+        <li><strong>Movie Search:</strong> Interactive search</li>
+        <li><strong>Director Tree:</strong> Explore director-actor collaboration networks</li>
+    </ul>
+
+
+
+    <div class="success">
+        <strong>No Build Process Required:</strong> This is a static web project. There are no npm dependencies,
+        no compilation steps, and no build tools needed. Simply serve the files and open in a browser.
+    </div>
+
+    <!-- Section 2: Prerequisites -->
+    <h2 id="prerequisites">2. Prerequisites</h2>
+
+    <h3>2.1 Required Software</h3>
+    <ul>
+        <li><strong>Web Browser:</strong> Chrome (recommended), Firefox, Safari, or Edge</li>
+        <li><strong>Local Web Server:</strong> One of the following options:
+            <ul>
+                <li>Python 3.x (comes with macOS/Linux)</li>
+                <li>Node.js with npx</li>
+                <li>VS Code with Live Server extension</li>
+                <li>Any HTTP server software</li>
+            </ul>
+        </li>
+        <li><strong>Text Editor:</strong> VS Code, Sublime Text, or any code editor (for modifications)</li>
+    </ul>
+
+    <!-- Section 3: Quick Start -->
+    <h2 id="quickstart">3. Quick Start Guide</h2>
+
+    <h3>3.1 Step-by-Step Setup</h3>
+
+    <h4>Step 1: Get the Project Files</h4>
+    <pre><code><span class="comment"># Clone from repository (if using Git)</span>
+<span class="command">git clone https://github.com/msouth-code/dataviz_finalproject.git</span>
+<span class="command">cd</span> dataviz_finalproject
+
+<span class="comment"># Or simply copy the project folder to your computer</span></code></pre>
+
+    <h4>Step 2: Start a Local Server</h4>
+    <p>Choose ONE of the following methods:</p>
+
+    <p><strong>Option A: Python (Recommended for macOS/Linux)</strong></p>
+    <pre><code><span class="comment"># Navigate to project folder</span>
+<span class="command">cd</span> /path/to/dataviz_finalproject
+
+<span class="comment"># Start server on port 8000</span>
+<span class="command">python -m http.server 8000</span>
+
+<span class="comment"># You should see: Serving HTTP on :: port 8000 ...</span></code></pre>
+
+    <p><strong>Option B: Node.js</strong></p>
+    <pre><code><span class="comment"># Navigate to project folder</span>
+<span class="command">cd</span> /path/to/dataviz_finalproject
+
+<span class="comment"># Run http-server (no installation needed with npx)</span>
+<span class="command">npx http-server</span></code></pre>
+
+    <p><strong>Option C: VS Code Live Server</strong></p>
+    <ol>
+        <li>Open the project folder in VS Code</li>
+        <li>Install the "Live Server" extension (if not already installed)</li>
+        <li>Right-click on <code>index.html</code></li>
+        <li>Select "Open with Live Server"</li>
+    </ol>
+
+    <h4>Step 3: Open in Browser</h4>
+    <pre><code><span class="comment"># Open your browser and navigate to:</span>
+http://localhost:8000</code></pre>
+
+    <div class="success">
+        <strong>Success!</strong> You should see the main dashboard with five visualization tiles:
+        No Filter, Battle of Box Office, Over the Years, Search Party, and Director's Choice.
+    </div>
+
+    <h3>3.2 Quick Start Checklist</h3>
+    <ul class="checklist">
+        <li>Project files downloaded/cloned</li>
+        <li>Terminal/command prompt open in project folder</li>
+        <li>Local server running (Python, Node, or VS Code)</li>
+        <li>Browser open at localhost:8000</li>
+        <li>Main dashboard visible with 5 tiles</li>
+    </ul>
+
+    <!-- Section 4: Project Structure -->
+    <h2 id="structure">4. Project Structure</h2>
+
+    <h3>4.1 Directory Layout</h3>
+    <div class="file-tree">
+        <span class="folder">dataviz_finalproject/</span><br>
+        ├── <span class="file">index.html</span> <span class="desc">← Main landing page (start here)</span><br>
+        ├── <span class="file">style.css</span> <span class="desc">← Global styles for all pages</span><br>
+        ├── <span class="file">README.md</span> <span class="desc">← Basic project readme</span><br>
+        │<br>
+        ├── <span class="folder">code/</span> <span class="desc">← Visualization pages</span><br>
+        │   ├── <span class="file">filtering.html</span> <span class="desc">← Critics vs Audience scatterplot</span><br>
+        │   ├── <span class="file">boxoffice_new.html</span> <span class="desc">← World map box office</span><br>
+        │   ├── <span class="file">trend_new.html</span> <span class="desc">← Genre trends over time</span><br>
+        │   ├── <span class="file">search.html</span> <span class="desc">← Movie search interface</span><br>
+        │   ├── <span class="file">tree.html</span> <span class="desc">← Director-actor tree</span><br>
+        │   └── <span class="file">*.html</span> <span class="desc">← Legacy/backup versions</span><br>
+        │<br>
+        ├── <span class="folder">data/</span> <span class="desc">← CSV data files</span><br>
+        │   ├── <span class="file">mini_movieratings.csv</span> <span class="desc">← Primary dataset (7,727 movies)</span><br>
+        │   ├── <span class="file">filtered_movieratings.csv</span> <span class="desc">← Extended dataset (11,771 movies)</span><br>
+        │   ├── <span class="file">movieratings.csv</span> <span class="desc">← Full dataset (16,637 movies)</span><br>
+        │   ├── <span class="file">directors.csv</span> <span class="desc">← Director-actor relationships</span><br>
+        │   ├── <span class="file">boxoffice_weekend.csv</span> <span class="desc">← Box office by country</span><br>
+        │   └── <span class="file">ratings_by_year.csv</span> <span class="desc">← Yearly summaries</span><br>
+        │<br>
+        ├── <span class="folder">assets/</span> <span class="desc">← Images and thumbnails</span><br>
+        │   ├── <span class="file">filter.jpg, boxoffice.jpg</span> <span class="desc">← Tile images</span><br>
+        │   ├── <span class="file">trend.jpg, search.jpg</span><br>
+        │   ├── <span class="file">directors.jpg</span><br>
+        │   └── <span class="file">genericmovie.jpg</span> <span class="desc">← Placeholder image</span><br>
+        │<br>
+        └── <span class="folder">fonts/</span> <span class="desc">← Custom web fonts</span><br>
+            ├── <span class="file">StandingRoomOnlyNF.otf</span> <span class="desc">← Title font</span><br>
+            ├── <span class="file">marquee.otf</span> <span class="desc">← Animated banner font</span><br>
+            └── <span class="file">NightAtTheOperaNF.otf</span>
+    </div>
+
+    <h3>4.2 Key Files Explained</h3>
+    <table>
+        <tr>
+            <th>File</th>
+            <th>Purpose</th>
+            <th>When to Edit</th>
+        </tr>
+        <tr>
+            <td><code>index.html</code></td>
+            <td>Main dashboard with navigation tiles</td>
+            <td>To add/remove visualizations</td>
+        </tr>
+        <tr>
+            <td><code>style.css</code></td>
+            <td>Global styling (colors, fonts, layouts)</td>
+            <td>To change visual theme</td>
+        </tr>
+        <tr>
+            <td><code>data/movieratings.csv</code></td>
+            <td>Primary movie database</td>
+            <td>To update movie data</td>
+        </tr>
+    </table>
+
+
+    <!-- Section 5: Data Documentation -->
+    <h2 id="data">5. Data Documentation</h2>
+
+    <h3>5.1 Primary Dataset: movieratings.csv</h3>
+    <p>Contains 7,727 movies with the following columns:</p>
+
+    <table>
+        <tr>
+            <th>Column</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+        <tr><td>movie_title</td><td>String</td><td>Title of the movie</td></tr>
+        <tr><td>movie_info</td><td>String</td><td>Synopsis/description</td></tr>
+        <tr><td>critics_consensus</td><td>String</td><td>Critics' summary review</td></tr>
+        <tr><td>rating</td><td>String</td><td>MPAA rating (G, PG, PG-13, R, etc.)</td></tr>
+        <tr><td>genre</td><td>String</td><td>Genre(s), comma-separated</td></tr>
+        <tr><td>directors</td><td>String</td><td>Director name(s)</td></tr>
+        <tr><td>writers</td><td>String</td><td>Writer name(s)</td></tr>
+        <tr><td>cast</td><td>String</td><td>Cast members, comma-separated</td></tr>
+        <tr><td>in_theaters_date</td><td>Date</td><td>Theatrical release date (YYYY-MM-DD)</td></tr>
+        <tr><td>on_streaming_date</td><td>Date</td><td>Streaming release date</td></tr>
+        <tr><td>runtime_in_minutes</td><td>Integer</td><td>Movie length in minutes</td></tr>
+        <tr><td>studio_name</td><td>String</td><td>Production studio</td></tr>
+        <tr><td>tomatometer_status</td><td>String</td><td>Fresh, Certified Fresh, or Rotten</td></tr>
+        <tr><td>tomatometer_rating</td><td>Integer</td><td>Critics score (0-100)</td></tr>
+        <tr><td>tomatometer_count</td><td>Integer</td><td>Number of critic reviews</td></tr>
+        <tr><td>audience_rating</td><td>Integer</td><td>Audience score (0-100)</td></tr>
+        <tr><td>audience_count</td><td>Integer</td><td>Number of audience ratings</td></tr>
+    </table>
+
+    <h3>5.2 Other Data Files</h3>
+    <table>
+        <tr>
+            <th>File</th>
+            <th>Records</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td>directors.csv</td>
+            <td>86</td>
+            <td>Director-actor collaboration pairs</td>
+        </tr>
+        <tr>
+            <td>boxoffice_weekend.csv</td>
+            <td>94</td>
+            <td>Weekend box office by country</td>
+        </tr>
+        <tr>
+            <td>ratings_by_year.csv</td>
+            <td>5</td>
+            <td>Aggregated yearly statistics</td>
+        </tr>
+    </table>
+
+    <!-- Section 6: Deployment -->
+    <h2 id="deployment">6. Deployment</h2>
+
+    <h3>6.1 GitHub Pages (Recommended)</h3>
+    <p>This project is configured for GitHub Pages deployment:</p>
+    <ol>
+        <li>Push code to a GitHub repository</li>
+        <li>Go to repository Settings → Pages</li>
+        <li>Select "Deploy from a branch"</li>
+        <li>Choose <code>main</code> branch and <code>/ (root)</code> folder</li>
+        <li>Click Save</li>
+        <li>Access at: <code>https://username.github.io/repository-name</code></li>
+    </ol>
+
+    <!-- Section 9: Appendix -->
+    <h2 id="appendix">7. Appendix</h2>
+
+    <h3>7.1 External Dependencies (CDN)</h3>
+    <p>These libraries are loaded from CDN and require internet access:</p>
+    <ul>
+        <li><code>https://d3js.org/d3.v7.min.js</code> - D3.js visualization library</li>
+        <li><code>https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js</code> - Legend plugin</li>
+        <li><code>https://unpkg.com/topojson@3</code> - TopoJSON for maps</li>
+    </ul>
+
+    <h3>7.2 Contact & Support</h3>
+    <p>For questions about this project, email msouth@dons.usfca.edu.</p>
+
+    <hr style="margin-top: 50px; border: none; border-top: 2px solid #a61616;">
+    <p style="text-align: center; color: #888; font-size: 0.9em;">
+        Rotten Tomatoes Data Visualization Project<br>
+        Instruction Manual v1.0
+    </p>
+
+</body>
+</html>

@@ -1,4 +1,12 @@
-<!-- PLEASE SEE README.md FOR REFERENCES -->
+<!--
+    DIRECTOR-ACTOR COLLABORATION TREE
+
+    This visualization displays a hierarchical tree showing directors
+    and their frequently collaborating actors. Actors appear under a
+    director only if they've worked together on 4+ films.
+
+    Data Source: directors.csv
+-->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -12,237 +20,306 @@
 
 <body>
     <div class="page" style="width: 100%; max-width: 1360px; margin: 0 auto;">
-    <a class="back-button" href="../index.html">Back</a>
-    <div class="page-header" style="justify-content: center; align-items: center;">Director-Actor Collaborations</div>
-    <p> </p>
 
-    <div class="chart-container">
-        <div id="tree-chart"></div>
-        <div id="tree-tooltip" style="
-            position: fixed;
-            display: none;
-            background: white;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 10px 14px;
-            pointer-events: none;
-            font-size: 14px;
-            max-width: 300px;
-            z-index: 100;
-            box-shadow: 0 4px 16px rgba(0,0,0,.2);
-        ">
-            <div id="tt-title" style="font-weight: bold; margin-bottom: 5px;"></div>
-            <div id="tt-movies" style="color: #333;"></div>
+        <!-- Navigation -->
+        <a class="back-button" href="../index.html">Back</a>
+
+        <!-- Page Header -->
+        <div class="page-header" style="justify-content: center; align-items: center;">
+            Director-Actor Collaborations
         </div>
-    </div>
+        <p></p>
 
-    <script type="text/javascript">
-        const margin = { top: 40, right: 200, bottom: 40, left: 150 };
-        const width = 1400 - margin.left - margin.right;
-        const height = 800 - margin.top - margin.bottom;
+        <!-- Chart Container -->
+        <div class="chart-container">
+            <div id="tree-chart"></div>
 
-        const svg = d3.select("#tree-chart")
-            .append("svg")
-            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
-            .attr("preserveAspectRatio", "xMidYMid meet")
-            .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
+            <!-- Tooltip for displaying movie details on hover -->
+            <div id="tree-tooltip" style="
+                position: fixed;
+                display: none;
+                background: white;
+                border: 1px solid #333;
+                border-radius: 8px;
+                padding: 10px 14px;
+                pointer-events: none;
+                font-size: 14px;
+                max-width: 300px;
+                z-index: 100;
+                box-shadow: 0 4px 16px rgba(0,0,0,.2);
+            ">
+                <div id="tt-title" style="font-weight: bold; margin-bottom: 5px;"></div>
+                <div id="tt-movies" style="color: #333;"></div>
+            </div>
+        </div>
 
-        const tooltip = document.getElementById('tree-tooltip');
-        const ttTitle = document.getElementById('tt-title');
-        const ttMovies = document.getElementById('tt-movies');
+        <script type="text/javascript">
+            // =================================================================
+            // CONFIGURATION
+            // =================================================================
 
-        d3.csv("../data/directors.csv").then(function(data) {
-            console.log("Data loaded:", data.length, "movies");
+            // Chart dimensions with margins for labels
+            const margin = { top: 40, right: 200, bottom: 40, left: 150 };
+            const width = 1400 - margin.left - margin.right;
+            const height = 800 - margin.top - margin.bottom;
 
-            // Build a map of director -> actor -> { count, movies }
-            const directorActorMap = {};
-            // Also track all movies per director
-            const directorMovies = {};
+            // Minimum number of collaborations to show an actor
+            const MIN_COLLABORATIONS = 4;
 
-            data.forEach(movie => {
-                const directors = movie.directors.split(", ");
-                const cast = movie.cast.split(", ");
-                const title = movie.movie_title;
+            // Maximum actors to show per director
+            const MAX_ACTORS_PER_DIRECTOR = 10;
 
-                directors.forEach(director => {
-                    // Track director's movies
-                    if (!directorMovies[director]) {
-                        directorMovies[director] = [];
-                    }
-                    if (!directorMovies[director].includes(title)) {
-                        directorMovies[director].push(title);
-                    }
 
-                    // Track director-actor collaborations
-                    if (!directorActorMap[director]) {
-                        directorActorMap[director] = {};
-                    }
-                    cast.forEach(actor => {
-                        if (!directorActorMap[director][actor]) {
-                            directorActorMap[director][actor] = { count: 0, movies: [] };
+            // =================================================================
+            // SVG SETUP
+            // =================================================================
+
+            const svg = d3.select("#tree-chart")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+                .attr("preserveAspectRatio", "xMidYMid meet")
+                .append("g")
+                .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+
+            // =================================================================
+            // TOOLTIP REFERENCES
+            // =================================================================
+
+            const tooltip = document.getElementById('tree-tooltip');
+            const ttTitle = document.getElementById('tt-title');
+            const ttMovies = document.getElementById('tt-movies');
+
+
+            // =================================================================
+            // DATA LOADING & PROCESSING
+            // =================================================================
+
+            d3.csv("../data/directors.csv").then(function(data) {
+                console.log("Data loaded:", data.length, "movies");
+
+                // ---------------------------------------------------------
+                // Build Director-Actor Collaboration Map
+                // ---------------------------------------------------------
+
+                // Maps: director -> actor -> { count, movies[] }
+                const directorActorMap = {};
+
+                // Maps: director -> movies[]
+                const directorMovies = {};
+
+                // Process each movie record
+                data.forEach(movie => {
+                    const directors = movie.directors.split(", ");
+                    const cast = movie.cast.split(", ");
+                    const title = movie.movie_title;
+
+                    directors.forEach(director => {
+                        // Track all movies by this director
+                        if (!directorMovies[director]) {
+                            directorMovies[director] = [];
                         }
-                        directorActorMap[director][actor].count += 1;
-                        if (!directorActorMap[director][actor].movies.includes(title)) {
-                            directorActorMap[director][actor].movies.push(title);
+                        if (!directorMovies[director].includes(title)) {
+                            directorMovies[director].push(title);
                         }
+
+                        // Track director-actor collaborations
+                        if (!directorActorMap[director]) {
+                            directorActorMap[director] = {};
+                        }
+
+                        cast.forEach(actor => {
+                            if (!directorActorMap[director][actor]) {
+                                directorActorMap[director][actor] = { count: 0, movies: [] };
+                            }
+                            directorActorMap[director][actor].count += 1;
+
+                            if (!directorActorMap[director][actor].movies.includes(title)) {
+                                directorActorMap[director][actor].movies.push(title);
+                            }
+                        });
                     });
                 });
-            });
 
-            // Convert to hierarchy, filtering for actors in 4+ movies with same director
-            const hierarchyData = {
-                name: "Directors",
-                children: Object.entries(directorActorMap)
-                    .map(([director, actors]) => ({
-                        name: director,
-                        movies: directorMovies[director] || [],
-                        children: Object.entries(actors)
-                            .filter(([actor, info]) => info.count >= 4)
-                            .map(([actor, info]) => ({
-                                name: actor,
-                                value: info.count,
-                                movies: info.movies,
-                                director: director
-                            }))
-                            .sort((a, b) => b.value - a.value)
-                            .slice(0, 10)  // limit to top 10 actors per director
-                    }))
-                    .filter(d => d.children.length > 0)
-                    .sort((a, b) => b.children.length - a.children.length)
-            };
 
-            console.log("Directors with repeat actors:", hierarchyData.children.length);
-            console.log(hierarchyData);
+                // ---------------------------------------------------------
+                // Build Hierarchy for D3 Tree Layout
+                // ---------------------------------------------------------
 
-            // Create the tree layout
-            const root = d3.hierarchy(hierarchyData);
+                const hierarchyData = {
+                    name: "Directors",
+                    children: Object.entries(directorActorMap)
+                        .map(([director, actors]) => ({
+                            name: director,
+                            movies: directorMovies[director] || [],
+                            // Filter to actors with MIN_COLLABORATIONS+ films together
+                            children: Object.entries(actors)
+                                .filter(([actor, info]) => info.count >= MIN_COLLABORATIONS)
+                                .map(([actor, info]) => ({
+                                    name: actor,
+                                    value: info.count,
+                                    movies: info.movies,
+                                    director: director
+                                }))
+                                // Sort by collaboration count (descending)
+                                .sort((a, b) => b.value - a.value)
+                                // Limit to top actors per director
+                                .slice(0, MAX_ACTORS_PER_DIRECTOR)
+                        }))
+                        // Only include directors with qualifying actors
+                        .filter(d => d.children.length > 0)
+                        // Sort by number of repeat collaborators (descending)
+                        .sort((a, b) => b.children.length - a.children.length)
+                };
 
-            const treeLayout = d3.tree()
-                .size([height, width - 100]);
+                console.log("Directors with repeat actors:", hierarchyData.children.length);
 
-            treeLayout(root);
 
-            // Draw links
-            svg.selectAll(".link")
-                .data(root.links())
-                .enter()
-                .append("path")
-                .attr("class", "link")
-                .attr("fill", "none")
-                .attr("stroke", "#ccc")
-                .attr("stroke-width", 2)
-                .attr("d", d3.linkHorizontal()
-                    .x(d => d.y)
-                    .y(d => d.x));
+                // ---------------------------------------------------------
+                // Create D3 Tree Layout
+                // ---------------------------------------------------------
 
-            // Draw nodes
-            const nodes = svg.selectAll(".node")
-                .data(root.descendants())
-                .enter()
-                .append("g")
-                .attr("class", "node")
-                .attr("transform", d => `translate(${d.y},${d.x})`);
+                const root = d3.hierarchy(hierarchyData);
+                const treeLayout = d3.tree().size([height, width - 100]);
+                treeLayout(root);
 
-            // Add circles for nodes
-            nodes.append("circle")
-                .attr("r", d => d.depth === 0 ? 12 : d.depth === 1 ? 8 : 5)
-                .attr("fill", d => {
-                    if (d.depth === 0) return "#ff6b6b";  // root
-                    if (d.depth === 1) return "#4ecdc4";  // directors
-                    return "#ffe66d";  // actors
-                })
-                .attr("stroke", "#333")
-                .attr("stroke-width", 1);
 
-            // Add labels
-            nodes.append("text")
-                .attr("dy", "0.35em")
-                .attr("x", d => d.children ? -15 : 10)
-                .attr("text-anchor", d => d.children ? "end" : "start")
-                .attr("fill", "black")
-                .attr("font-size", "20px")
-                .text(d => {
-                    if (d.data.value) {
-                        return `${d.data.name} (${d.data.value})`;
+                // ---------------------------------------------------------
+                // Draw Connecting Lines (Links)
+                // ---------------------------------------------------------
+
+                svg.selectAll(".link")
+                    .data(root.links())
+                    .enter()
+                    .append("path")
+                    .attr("class", "link")
+                    .attr("fill", "none")
+                    .attr("stroke", "#ccc")
+                    .attr("stroke-width", 2)
+                    .attr("d", d3.linkHorizontal()
+                        .x(d => d.y)
+                        .y(d => d.x));
+
+
+                // ---------------------------------------------------------
+                // Draw Nodes (Circles + Labels)
+                // ---------------------------------------------------------
+
+                const nodes = svg.selectAll(".node")
+                    .data(root.descendants())
+                    .enter()
+                    .append("g")
+                    .attr("class", "node")
+                    .attr("transform", d => `translate(${d.y}, ${d.x})`);
+
+                // Node circles - sized by hierarchy depth
+                nodes.append("circle")
+                    .attr("r", d => {
+                        if (d.depth === 0) return 12;  // Root node
+                        if (d.depth === 1) return 8;   // Director nodes
+                        return 5;                       // Actor nodes
+                    })
+                    .attr("fill", d => {
+                        if (d.depth === 0) return "#ff6b6b";  // Red - root
+                        if (d.depth === 1) return "#4ecdc4";  // Teal - directors
+                        return "#ffe66d";                      // Yellow - actors
+                    })
+                    .attr("stroke", "#333")
+                    .attr("stroke-width", 1);
+
+                // Node labels
+                nodes.append("text")
+                    .attr("dy", "0.35em")
+                    // Position text left of nodes with children, right otherwise
+                    .attr("x", d => d.children ? -15 : 10)
+                    .attr("text-anchor", d => d.children ? "end" : "start")
+                    .attr("fill", "black")
+                    .attr("font-size", "20px")
+                    .text(d => {
+                        // Show collaboration count for actors
+                        if (d.data.value) {
+                            return `${d.data.name} (${d.data.value})`;
+                        }
+                        return d.data.name;
+                    });
+
+
+                // ---------------------------------------------------------
+                // Tooltip Interactions
+                // ---------------------------------------------------------
+
+                nodes
+                    .on("mouseover", function(event, d) {
+                        // Skip root node
+                        if (d.depth === 0) return;
+
+                        if (d.depth === 1) {
+                            // Director node - show all movies
+                            ttTitle.textContent = d.data.name + " - Movies:";
+                            const movies = d.data.movies || [];
+                            ttMovies.innerHTML = movies.length > 0
+                                ? "• " + movies.join("<br>• ")
+                                : "No movies found";
+                        } else if (d.depth === 2) {
+                            // Actor node - show movies with parent director
+                            const director = d.parent.data.name;
+                            ttTitle.textContent = d.data.name + " with " + director + ":";
+                            const movies = d.data.movies || [];
+                            ttMovies.innerHTML = movies.length > 0
+                                ? "• " + movies.join("<br>• ")
+                                : "No movies found";
+                        }
+
+                        tooltip.style.display = "block";
+
+                        // Position tooltip, keeping it within viewport
+                        positionTooltip(event);
+                    })
+                    .on("mousemove", function(event) {
+                        positionTooltip(event);
+                    })
+                    .on("mouseout", function() {
+                        tooltip.style.display = "none";
+                    });
+
+
+                /**
+                 * Positions tooltip near cursor while keeping it in viewport.
+                 *
+                 * @param {Event} event - Mouse event for position
+                 */
+                function positionTooltip(event) {
+                    const ttWidth = tooltip.offsetWidth;
+                    const ttHeight = tooltip.offsetHeight;
+                    const viewWidth = window.innerWidth;
+                    const viewHeight = window.innerHeight;
+
+                    let left = event.clientX + 15;
+                    let top = event.clientY - 10;
+
+                    // Prevent right overflow
+                    if (left + ttWidth > viewWidth - 10) {
+                        left = event.clientX - ttWidth - 15;
                     }
-                    return d.data.name;
-                });
 
-            // Add tooltip events
-            nodes.on("mouseover", function(event, d) {
-                if (d.depth === 0) return; // Skip root node
+                    // Prevent bottom overflow
+                    if (top + ttHeight > viewHeight - 10) {
+                        top = viewHeight - ttHeight - 10;
+                    }
 
-                if (d.depth === 1) {
-                    // Director node - show all movies by this director
-                    ttTitle.textContent = d.data.name + " - Movies:";
-                    const movies = d.data.movies || [];
-                    ttMovies.innerHTML = movies.length > 0 ? "• " + movies.join("<br>• ") : "No movies found";
-                } else if (d.depth === 2) {
-                    // Actor node - show movies with this actor by the parent director
-                    const director = d.parent.data.name;
-                    ttTitle.textContent = d.data.name + " with " + director + ":";
-                    const movies = d.data.movies || [];
-                    ttMovies.innerHTML = movies.length > 0 ? "• " + movies.join("<br>• ") : "No movies found";
+                    // Prevent top overflow
+                    if (top < 10) {
+                        top = 10;
+                    }
+
+                    tooltip.style.left = left + "px";
+                    tooltip.style.top = top + "px";
                 }
 
-                tooltip.style.display = "block";
-
-                // Position tooltip, keeping it on screen
-                const ttWidth = tooltip.offsetWidth;
-                const ttHeight = tooltip.offsetHeight;
-                const viewWidth = window.innerWidth;
-                const viewHeight = window.innerHeight;
-
-                let left = event.clientX + 15;
-                let top = event.clientY - 10;
-
-                // Prevent right overflow
-                if (left + ttWidth > viewWidth - 10) {
-                    left = event.clientX - ttWidth - 15;
-                }
-                // Prevent bottom overflow
-                if (top + ttHeight > viewHeight - 10) {
-                    top = viewHeight - ttHeight - 10;
-                }
-                // Prevent top overflow
-                if (top < 10) {
-                    top = 10;
-                }
-
-                tooltip.style.left = left + "px";
-                tooltip.style.top = top + "px";
-            })
-            .on("mousemove", function(event) {
-                const ttWidth = tooltip.offsetWidth;
-                const ttHeight = tooltip.offsetHeight;
-                const viewWidth = window.innerWidth;
-                const viewHeight = window.innerHeight;
-
-                let left = event.clientX + 15;
-                let top = event.clientY - 10;
-
-                if (left + ttWidth > viewWidth - 10) {
-                    left = event.clientX - ttWidth - 15;
-                }
-                if (top + ttHeight > viewHeight - 10) {
-                    top = viewHeight - ttHeight - 10;
-                }
-                if (top < 10) {
-                    top = 10;
-                }
-
-                tooltip.style.left = left + "px";
-                tooltip.style.top = top + "px";
-            })
-            .on("mouseout", function() {
-                tooltip.style.display = "none";
+            }).catch(function(error) {
+                console.error("Error loading CSV:", error);
             });
-
-        }).catch(function(error) {
-            console.error("Error loading CSV:", error);
-        });
-    </script>
+        </script>
     </div>
 </body>
 

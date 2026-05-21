@@ -1,6 +1,12 @@
-<!-- <div class='tableauPlaceholder' id='viz1777561064914' style='position: relative'><noscript><a href='#'><img alt='Average Tomatometer Rating by Genre from 1985 to 2019 ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;fi&#47;finalviz_17775610127530&#47;Sheet2&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='finalviz_17775610127530&#47;Sheet2' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;fi&#47;finalviz_17775610127530&#47;Sheet2&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /><param name='filter' value='publish=yes' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1777561064914');                    var vizElement = divElement.getElementsByTagName('object')[0];                    vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';                    var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script> -->
+<!--
+    MOVIE SEARCH & RATING COMPARISON
 
-<!-- PLEASE SEE README.md FOR REFERENCES -->
+    This visualization allows users to search for movies by title,
+    rate them personally, and compare their rating against the
+    Tomatometer (critics) and audience scores via a bar chart.
+
+    Data Source: mini_movieratings.csv
+-->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,47 +14,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../style.css">
-    <title>Search</title>
+    <title>Search - Rate Your Movies</title>
     <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
+
+    <!-- Page-specific style overrides for smaller, compact layout -->
     <style>
         .page-header {
             font-size: 36px;
         }
+
         .search-container {
             width: 500px;
         }
+
         #search-input {
             font-size: 24px;
             padding: 8px 12px;
         }
+
         #suggestions li a {
             font-size: 18px;
             padding: 8px;
         }
+
         .slide-container {
             width: 300px;
         }
+
         .slide-container p {
             font-size: 16px !important;
         }
+
         #myRange {
             height: 8px;
         }
+
         .enter-button {
             font-size: 14px;
             padding: 6px 12px;
         }
+
         .results-container {
             gap: 15px;
             margin-top: 15px;
         }
+
         #movie-info {
             font-size: 14px;
             padding: 10px;
         }
+
         #movie-info h2 {
             font-size: 18px;
         }
+
         #chart {
             padding: 10px;
             max-width: 300px;
@@ -57,55 +76,88 @@
 </head>
 
 <body>
+    <!-- Navigation -->
     <a class="back-button" href="../index.html">Back</a>
 
+    <!-- Page Header -->
     <div class="page-header">See How Your Rating Compares!</div>
-    <p> </p>
+    <p></p>
 
+    <!-- Search Input with Autocomplete -->
     <div class="search-container">
         <input type="text" id="search-input" placeholder="Search for a movie...">
         <ul id="suggestions"></ul>
     </div>
 
+    <!-- Rating Slider (hidden until movie selected) -->
     <div class="slide-container" id="slider" style="display: none;">
-        <input type="range" min="0" max="100" value="50" class="slider" id="myRange"></input>
+        <input type="range" min="0" max="100" value="50" class="slider" id="myRange">
         <p style="font-size: 38px; text-align: center;">Rating: <span id="demo"></span></p>
     </div>
 
+    <!-- Submit Button (hidden until movie selected) -->
     <div class="button-container" style="display: none;" id="enterButton">
         <button class="enter-button" id="enter">Enter</button>
     </div>
 
+    <!-- Results Panel: Movie Info + Comparison Chart -->
     <div class="results-container" id="results" style="display: none;">
         <div id="movie-info" style="background-color: antiquewhite;"></div>
         <div id="chart" style="background-color: antiquewhite;"></div>
     </div>
 
     <script>
-        let allMovies = [];
-        let selectedMovie = null;
+        // =================================================================
+        // STATE VARIABLES
+        // =================================================================
 
-        d3.csv("../data/mini_movieratings.csv").then(function (data) {
+        let allMovies = [];           // Stores all movies from CSV
+        let selectedMovie = null;     // Currently selected movie object
+
+
+        // =================================================================
+        // DATA LOADING
+        // =================================================================
+
+        // Load movie data from CSV
+        d3.csv("../data/mini_movieratings.csv").then(function(data) {
             allMovies = data;
         });
+
+
+        // =================================================================
+        // DOM ELEMENT REFERENCES
+        // =================================================================
 
         const input = d3.select("#search-input");
         const userRating = d3.select("#user-rating");
         const suggestionsList = d3.select("#suggestions");
         const movieInfo = d3.select("#movie-info");
 
-        input.on("input", function () {
+
+        // =================================================================
+        // SEARCH AUTOCOMPLETE
+        // =================================================================
+
+        /**
+         * Handles search input changes.
+         * Filters movies by title and displays matching suggestions.
+         */
+        input.on("input", function() {
             const searchTerm = this.value.toLowerCase();
 
+            // Clear suggestions if search is empty
             if (searchTerm.length === 0) {
                 suggestionsList.html("");
                 return;
             }
 
+            // Find movies matching search term (limit to 10)
             const matches = allMovies.filter(d =>
                 d.movie_title.toLowerCase().includes(searchTerm)
             ).slice(0, 10);
 
+            // Render suggestion list
             suggestionsList.html("");
             suggestionsList.selectAll("li")
                 .data(matches)
@@ -114,95 +166,159 @@
                 .append("a")
                 .style("cursor", "pointer")
                 .text(d => d.movie_title)
-                .on("click", function (evt, d) {
-                    suggestionsList.html("");
-                    input.property("value", d.movie_title);
-                    userRating.html("What would you rate this movie out of 100?")
-
-                    d3.select("#slider").style("display", "block");
-
-                    const slider = document.getElementById('myRange');
-                    const output = document.getElementById('demo');
-
-                    output.innerHTML = slider.value;
-
-                    slider.oninput = function () {
-                        output.innerHTML = this.value;
-                    }
-
-                    selectedMovie = d;  // Store the movie                                                                                                                    
-                    d3.select("#enterButton").style("display", "flex");
-
-                    document.getElementById("enter").onclick = function () {
-                        const userRate = +document.getElementById('myRange').value;
-                        selectMovie(selectedMovie, userRate);
-                    }
-                    //                                                                                                     
-                });
+                .on("click", handleMovieSelection);
         });
 
 
+        // =================================================================
+        // MOVIE SELECTION HANDLER
+        // =================================================================
 
-        function selectMovie(movie, userRate) {
+        /**
+         * Handles when a user clicks on a movie suggestion.
+         * Shows the rating slider and prepares for comparison.
+         *
+         * @param {Event} event - Click event
+         * @param {Object} movie - Selected movie data object
+         */
+        function handleMovieSelection(event, movie) {
+            // Clear suggestions and fill input with selected title
+            suggestionsList.html("");
+            input.property("value", movie.movie_title);
+
+            // Show rating slider
+            d3.select("#slider").style("display", "block");
+
+            // Initialize slider display
+            const slider = document.getElementById('myRange');
+            const output = document.getElementById('demo');
+            output.innerHTML = slider.value;
+
+            // Update display on slider change
+            slider.oninput = function() {
+                output.innerHTML = this.value;
+            };
+
+            // Store selected movie for later
+            selectedMovie = movie;
+
+            // Show enter button
+            d3.select("#enterButton").style("display", "flex");
+
+            // Handle Enter button click
+            document.getElementById("enter").onclick = function() {
+                const userRate = +document.getElementById('myRange').value;
+                displayMovieComparison(selectedMovie, userRate);
+            };
+        }
+
+
+        // =================================================================
+        // MOVIE COMPARISON DISPLAY
+        // =================================================================
+
+        /**
+         * Displays movie details and comparison bar chart.
+         *
+         * @param {Object} movie - Selected movie data object
+         * @param {number} userRate - User's personal rating (0-100)
+         */
+        function displayMovieComparison(movie, userRate) {
             input.property("value", movie.movie_title);
             suggestionsList.html("");
 
+            // Show movie information panel
             movieInfo.style("display", "block")
-                .html(`                                                                                                                                           
-              <h2>${movie.movie_title}</h2>      
-              <p>${movie.movie_info}</p>                                                                                                           
-              <p><strong>Genre:</strong> ${movie.genre}</p>                                                                                                 
-              <p><strong>Tomatometer:</strong> ${movie.tomatometer_rating}%</p>                                                                             
-              <p><strong>Audience Rating:</strong> ${movie.audience_rating}%</p>                                                                            
-          `);
+                .html(`
+                    <h2>${movie.movie_title}</h2>
+                    <p>${movie.movie_info}</p>
+                    <p><strong>Genre:</strong> ${movie.genre}</p>
+                    <p><strong>Tomatometer:</strong> ${movie.tomatometer_rating}%</p>
+                    <p><strong>Audience Rating:</strong> ${movie.audience_rating}%</p>
+                `);
 
-            // Show results container with movie info and chart
+            // Show results container and render chart
             d3.select("#results").style("display", "flex");
             updateBarChart(+movie.tomatometer_rating, +movie.audience_rating, userRate);
         }
 
-        d3.select("body").on("click", function (evt) {
-            if (!evt.target.closest(".search-container")) {
+
+        // =================================================================
+        // CLICK-AWAY HANDLER
+        // =================================================================
+
+        // Close suggestions when clicking outside search container
+        d3.select("body").on("click", function(event) {
+            if (!event.target.closest(".search-container")) {
                 suggestionsList.html("");
             }
         });
 
+
+        // =================================================================
+        // BAR CHART SETUP
+        // =================================================================
+
+        // Chart dimensions
         const margin = { top: 30, right: 30, bottom: 50, left: 60 };
         const chartWidth = 400 - margin.left - margin.right;
         const chartHeight = 300 - margin.top - margin.bottom;
 
+        // Create SVG container for bar chart
         const svg = d3.select("#chart")
             .append("svg")
             .attr("viewBox", `0 0 ${chartWidth + margin.left + margin.right} ${chartHeight + margin.top + margin.bottom}`)
             .attr("preserveAspectRatio", "xMidYMid meet")
             .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
+            .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
+
+        // =================================================================
+        // BAR CHART UPDATE FUNCTION
+        // =================================================================
+
+        /**
+         * Updates the comparison bar chart with new values.
+         *
+         * @param {number} tomatometer - Critics score (0-100)
+         * @param {number} audience - Audience score (0-100)
+         * @param {number} userRating - User's personal rating (0-100)
+         */
         function updateBarChart(tomatometer, audience, userRating) {
+            // Clear previous chart
             svg.selectAll("*").remove();
 
+            // Prepare data for bars
             const data = [
                 { label: "Tomatometer", value: tomatometer },
                 { label: "Audience", value: audience },
                 { label: "Your Rating", value: userRating }
             ];
 
+            // X scale (categorical)
             const x = d3.scaleBand()
                 .domain(data.map(d => d.label))
                 .range([0, chartWidth])
                 .padding(0.3);
 
+            // Y scale (0-100 for percentages)
             const y = d3.scaleLinear()
                 .domain([0, 100])
                 .range([chartHeight, 0]);
 
+            // X axis
             svg.append("g")
-                .attr("transform", `translate(0,${chartHeight})`)
+                .attr("transform", `translate(0, ${chartHeight})`)
                 .call(d3.axisBottom(x));
 
+            // Y axis
             svg.append("g")
                 .call(d3.axisLeft(y));
 
+            // Color scheme: Red for critics, Blue for audience, Green for user
+            const barColors = ["#e74c3c", "#3498db", "#2ecc71"];
+
+            // Draw bars
             svg.selectAll("rect")
                 .data(data)
                 .enter()
@@ -211,8 +327,9 @@
                 .attr("y", d => y(d.value))
                 .attr("width", x.bandwidth())
                 .attr("height", d => chartHeight - y(d.value))
-                .attr("fill", (d, i) => ["#e74c3c", "#3498db", "#2ecc71"][i]);
+                .attr("fill", (d, i) => barColors[i]);
 
+            // Add value labels above bars
             svg.selectAll(".label")
                 .data(data)
                 .enter()
@@ -221,7 +338,7 @@
                 .attr("y", d => y(d.value) - 5)
                 .attr("text-anchor", "middle")
                 .text(d => d.value);
-        } 
+        }
     </script>
 
 </body>
